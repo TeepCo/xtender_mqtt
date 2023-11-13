@@ -291,7 +291,7 @@ class XtenderMqttSender:
         self.client.on_message = on_message
 
 def send_device_discovery(client, device_manager, address, config, logger) -> None:
-    """Attempts to discover scom devices in the network.
+    """Home assistant mqtt discovery.
 
     Args:
         client (mqtt.Client): Mqtt client
@@ -303,7 +303,7 @@ def send_device_discovery(client, device_manager, address, config, logger) -> No
     logger.info(f"Sending hassio discovery for device {address}")
     device = device_manager._device[address]
     device_address = device.device_address
-    #             discovery_topic = f"{DISCOVERY_BASE_TOPIC}/{component}/{unique_id}/{param_key}/config"
+
 
     for param_key in config.mqtt_discovery_map:
         rule = config.mqtt_discovery_map[param_key]
@@ -337,8 +337,7 @@ def send_device_discovery(client, device_manager, address, config, logger) -> No
         unique_id = f"{rule['number']}_{device_address}_{param_key}"
 
         discovery_topic = f"{config.discovery_base_topic}/{component}/{unique_id}/{param_key}/config"
-        # discovery_topic = f"{DISCOVERY_BASE_TOPIC}/{component}/{device_type_str[0]}_{device_address}/{param_key}/config"
-        # print(discovery_topic)
+
         logger.debug("Discovery topic=" + discovery_topic)
 
         discovery_json = {

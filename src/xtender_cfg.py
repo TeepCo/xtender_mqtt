@@ -19,19 +19,25 @@ class XtenderConfig(DefaultValues):
         self.path_to_config_dir = os.path.join(os.getcwd(), f"../{self.xtender_config_folder_name}/")
         self.user_config_file_name = "user_config.yaml"
         self._user_config: dict = self.load_config_file(self.path_to_config_dir + self.user_config_file_name, FileType.YAML)
+
+        # These settings have to be filled. Program cannot run without them
         try:
-            self._user_sensors_config: dict = self._user_config['sensors']
-            self._user_parameters_config: dict = self._user_config['parameters']
-            self.urgent_list: list = self._user_config['urgent_list']
             self._user_mqtt_config: dict = self._user_config['mqtt_setup']
-            self.discovery_base_topic: dict = self._user_config['discovery_base_topic']
             self.logging_config: dict = self._user_config['logging']
             self._device_manager_config: dict = self._user_config['device_manager_config']
-            self._device_manager_config = self._user_config['device_manager_config']
-
 
         except KeyError as e:
             raise Exception(f"Parameter {e.args[0]} was not set in {self.path_to_config_dir}/{self.user_config_file_name}") from e
+
+        # These settings are optional - if not found, default values are used instead.
+
+        try:
+            self.discovery_base_topic: dict = self._user_config['discovery_base_topic']
+            self._user_sensors_config: dict = self._user_config['sensors']
+            self._user_parameters_config: dict = self._user_config['parameters']
+            self.urgent_list: list = self._user_config['urgent_list']
+        except KeyError:
+            pass
 
         self._update_user_preferences()
 

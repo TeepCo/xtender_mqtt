@@ -1,3 +1,106 @@
+mqtt_setup:
+  # username for connecting to mqtt message broker
+  mqtt_username :
+  # client id for connecting to mqtt message broker
+  mqtt_client_id :
+  # ip address of the MQTT message broker
+  mqtt_broker :
+  # password to connecto to MQTT message broker
+  mqtt_password :
+  #port for connecting via MQTT
+  mqtt_port :
+  # mqtt topic will have this prefix (e.g. xtender)
+  mqtt_root_prefix :
+
+device_manager_config:
+  scom:
+    # path to serial port where Xcom-232i is connected
+    interface:
+    # Baud rate of the serial connection
+    baudrate:
+  number_of_scom_devices:
+    xtender:
+
+
+# urgent_list: # List of urgent parameters that will be read (default 3022)
+#   - 3022
+
+
+# discovery_base_topic : homeassistant # Used for mqtt discovery if using mqtt in homeassistant
+# loop_sleep : 5  # Time to wait after loading data from all devices. (default 5)
+
+
+# Enables or disables sensors or parameters
+#
+# format:
+# [parameterName]:[True/False]
+#
+# Parameters and sensors description can be found in scom documentation [1] using numbers provided in line comments.
+# [1] https://studer-innotec.com/downloads/#xtender
+parameters:
+#  powerOnXtender: False # 1576
+#  powerOnAllXtenders: False # 1415
+#  powerOffAllXtenders: False # 1399
+#  resetAllInverters: False # 1468
+#  maximumAcInputCurrent: False # 1107
+#  allowInverter: True # 1124
+#  allowCharger: True # 1125
+#  batteryChargeReferenceCurrent: True # 1138
+#  standbyPowerLevel: False # 1187
+#  restoreDefaultSettings: False # 1395
+#  restoreFactorySettings: False # 1287
+#  batteryMinimumVoltageWithoutLoad: True # 1108
+#  batteryMinimumVoltageWithLoad: True # 1109
+#  batteryMaximumVoltage: True # 1121
+#  floatingVoltage: True # 1140
+#  forceFloatingPhase: False # 1467
+#  forceNewChargeCycle: False # 1142
+#  autoAcInputCurrentReduction: False # 1527
+#  boostPhaseAllowed: False # 1155
+#  boostVoltage: False # 1156
+#  inputCurrentAdaptionRange: False # 1433
+#  gridFeedingAllowed: False # 1127
+#  gridFeedingMaximumCurrent: False # 1523
+#  gridFeedingBatteryVoltage: False # 1524
+#  gridFeedingStartTime: False # 1525
+#  gridFeedingStopTime: False # 1526
+#  frequencyControlEnabled: False # 1627
+#  batteryPriorityAsEnergySource: False # 1296
+#  batteryPriorityVoltage: False # 1297
+#  batteryVoltageToDeactivate: True # 1255
+#  remoteEntryActivate: True # 1545
+#  chargerAllowed: False # 1125
+
+sensors:
+#  batteryVoltage: True # 3000
+#  batteryChargeReferenceCurrent: True # 3004
+#  batteryCurrent: True # 3005
+#  soc: False # 3007
+#  batteryCyclePhase: False # 3010
+#  pvVoltage: False # 3011
+#  inputVoltage: True # 3011
+#  inputCurrent: True # 3012
+#  busVoltage: False # 3021
+#  outputVoltage: True # 3021
+#  outputCurrent: True # 3022
+#  operatingMode: True # 3028
+#  inputFrequency: False # 3084
+#  inverterEnabled: True # 3049
+#  lockingsFlag: True # 3056
+#  softVersionMsb: False # 3130
+#  softVersionLsb: False # 3131
+#  acInjectionCurrentLimitation: False # 3158
+#  acInjectionCurrentLimitationReason: False # 3159
+#  sourceOfLimitation: False # 3160
+#  batteryPriorityActive: False # 3161
+#  forcedGridFeedingActive: False # 3162
+#  operatingState: False # 3028
+#  outputActivePowerMin: True # 3101
+#  inputActivePowerMin: True # 3119
+#  stateOfTransferRelay: True # 3020
+#  energyACInCurrentDay: True # 3080
+#  battDischargeCurrentDay: True # 3074
+#  consumersEnergyCurrentDay: True # 3083
 
 
 logging: # Setup logging.
@@ -21,105 +124,6 @@ logging: # Setup logging.
     sino:
       level: INFO
       handlers: [console]
-
-
-urgent_list: # List of urgent parameters that will be read
-  - 3022
-
-
-discovery_base_topic : homeassistant
-
-
-mqtt_setup:
-  mqtt_username : homeassistant
-  mqtt_client_id : xtender-mqtt-001
-  mqtt_broker : 10.10.10.10
-  mqtt_password : password
-  mqtt_port : 1883
-  loop_sleep : 5  # Time to wait after loading data from all devices.
-  mqtt_root_prefix : xtender
-
-device_manager_config:
-  scom:
-    interface: /dev/ttyUSB0
-    baudrate: 38400
-  number_of_scom_devices:
-    xtender: 6
-
-
-# Enables or disables sensors or parameters
-#
-# format:
-# [parameterName]:[True/False]
-#
-# Parameters and sensors description can be found in scom documentation [1] using numbers provided in line comments.
-# [1] https://studer-innotec.com/downloads/#xtender
-parameters:
-  powerOnXtender: False # 1576
-  powerOnAllXtenders: False # 1415
-  powerOffAllXtenders: False # 1399
-  resetAllInverters: False # 1468
-  maximumAcInputCurrent: False # 1107
-  allowInverter: True # 1124
-  allowCharger: True # 1125
-  batteryChargeReferenceCurrent: True # 1138
-  standbyPowerLevel: False # 1187
-  restoreDefaultSettings: False # 1395
-  restoreFactorySettings: False # 1287
-  batteryMinimumVoltageWithoutLoad: True # 1108
-  batteryMinimumVoltageWithLoad: True # 1109
-  batteryMaximumVoltage: True # 1121
-  floatingVoltage: True # 1140
-  forceFloatingPhase: False # 1467
-  forceNewChargeCycle: False # 1142
-  autoAcInputCurrentReduction: False # 1527
-  boostPhaseAllowed: False # 1155
-  boostVoltage: False # 1156
-  inputCurrentAdaptionRange: False # 1433
-  gridFeedingAllowed: False # 1127
-  gridFeedingMaximumCurrent: False # 1523
-  gridFeedingBatteryVoltage: False # 1524
-  gridFeedingStartTime: False # 1525
-  gridFeedingStopTime: False # 1526
-  frequencyControlEnabled: False # 1627
-  batteryPriorityAsEnergySource: False # 1296
-  batteryPriorityVoltage: False # 1297
-  batteryVoltageToDeactivate: True # 1255
-  remoteEntryActivate: True # 1545
-  chargerAllowed: False # 1125
-
-sensors:
-  batteryVoltage: True # 3000
-  batteryChargeReferenceCurrent: True # 3004
-  batteryCurrent: True # 3005
-  soc: False # 3007
-  batteryCyclePhase: False # 3010
-  pvVoltage: False # 3011
-  inputVoltage: True # 3011
-  inputCurrent: True # 3012
-  busVoltage: False # 3021
-  outputVoltage: True # 3021
-  outputCurrent: True # 3022
-  operatingMode: True # 3028
-  inputFrequency: False # 3084
-  inverterEnabled: True # 3049
-  lockingsFlag: True # 3056
-  softVersionMsb: False # 3130
-  softVersionLsb: False # 3131
-  acInjectionCurrentLimitation: False # 3158
-  acInjectionCurrentLimitationReason: False # 3159
-  sourceOfLimitation: False # 3160
-  batteryPriorityActive: False # 3161
-  forcedGridFeedingActive: False # 3162
-  operatingState: False # 3028
-  outputActivePowerMin: True # 3101
-  inputActivePowerMin: True # 3119
-  stateOfTransferRelay: True # 3020
-  energyACInCurrentDay: True # 3080
-  battDischargeCurrentDay: True # 3074
-  consumersEnergyCurrentDay: True # 3083
-
-
 
 
 
