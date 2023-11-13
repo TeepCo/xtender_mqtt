@@ -1,0 +1,5 @@
+Cython==0.29.32
+paho-mqtt==1.6.1
+pyserial==3.5
+PyYAML==6.0.1
+setuptools
