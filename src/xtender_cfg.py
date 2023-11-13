@@ -36,6 +36,7 @@ class XtenderConfig(DefaultValues):
             self._user_sensors_config: dict = self._user_config['sensors']
             self._user_parameters_config: dict = self._user_config['parameters']
             self.urgent_list: list = self._user_config['urgent_list']
+            self.loop_sleep = self._user_config['loop_sleep']
         except KeyError:
             pass
 
@@ -64,17 +65,17 @@ class XtenderConfig(DefaultValues):
             self.mqtt_broker = self._user_mqtt_config['mqtt_broker']
             self.mqtt_password = self._user_mqtt_config['mqtt_password']
             self.mqtt_port = self._user_mqtt_config['mqtt_port']
-            self.loop_sleep = self._user_mqtt_config['loop_sleep']
             self.mqtt_client_id = self._user_mqtt_config['mqtt_client_id']
             self.mqtt_root_prefix: dict = self._user_mqtt_config['mqtt_root_prefix']
         except KeyError as e:
             raise Exception(f"Error reading values in mqtt_setup section in {self.path_to_config_dir}/{self.user_config_file_name}") from e
 
-        for parameter_name, value in self._user_parameters_config.items():
-            self.parameters_config[parameter_name]['enabled'] = value
-
-        for sensor_name, value in self._user_sensors_config.items(): #TODO log changes?
-            self.sensors_config[sensor_name]['enabled'] = value
+        if hasattr(self, '_user_parameters_config'):
+            for parameter_name, value in self._user_parameters_config.items():
+                self.parameters_config[parameter_name]['enabled'] = value
+        if hasattr(self, '_user_sensors_config'):
+            for sensor_name, value in self._user_sensors_config.items():
+                self.sensors_config[sensor_name]['enabled'] = value
 
         try:
             self.device_manager_config['scom'] = self._device_manager_config['scom']
