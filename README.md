@@ -56,7 +56,7 @@ You can test your configuration by running the script directly
 with `./xtmq run` - by default it will log to the terminal. After you've verified that everything is working correctly, you can run `./xtmq service install` command, which will install a systemd service that restarts the script upon failure (as explained earlier).
 
 # Removal:
-If you only want to remove the service run `./xtmq service rmeove` (or delete the file `/etc/systemd/system/xtender_mqtt.service` manualy).
+If you only want to remove the service run `./xtmq service remove` (or delete the file `/etc/systemd/system/xtender_mqtt.service` manualy).
 
 
 If you want to uninstall the whole project you can do so by running the command `./xtmq uninstall`, which will stop and remove the service and deletes all the files in the xtender_mqtt directory afterwards.

@@ -324,11 +324,11 @@ def send_device_discovery(client, device_manager, address, config, logger) -> No
         unit_of_measurement = rule.get('unit_of_measurement', None)
 
         if rule['param']:
-            payload_topic = f"xtender/{device_address}/parameters/{param_key}"
+            payload_topic = f"{config.discovery_base_topic}/{device_address}/parameters/{param_key}"
             # name = device.paramInfoTable[param_key]['studerName']
             name = get_extended_param_info_table(device)[param_key]['studerName']
         else:
-            payload_topic = f"xtender/{device_address}/values/{param_key}"
+            payload_topic = f"{config.discovery_base_topic}/{device_address}/values/{param_key}"
             # name = device.userInfoTable[param_key]['studerName']
             name = get_extended_user_info_table(device)[param_key]['studerName']
 
