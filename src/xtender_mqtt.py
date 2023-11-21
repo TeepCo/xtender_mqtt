@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
+import logging
+from enum import Enum
+
 DEBUG = False
 if DEBUG:
     import pydevd_pycharm
@@ -84,6 +87,8 @@ class XtenderMqttSender:
             time.sleep(1)
 
             for device_address in self.device_manager._device.copy():
+                items_sent_count = 0
+                items_sending_failed = 0
                 self.logger.debug(f"Reading values from device address {device_address} urgent:{urgent}")
                 try:
                     device = self.device_manager._device[device_address]
@@ -93,20 +98,28 @@ class XtenderMqttSender:
                     break
 
                 user_info_table_extended = get_extended_user_info_table(device)
-                param_counter = 0
+
                 for param_value in user_info_table_extended.items():
                     param_number = param_value[1]['number']
                     if (urgent and param_number in self.config.urgent_list) or (not urgent and param_number not in self.config.urgent_list):
-                        self.read_and_publish_user_info(param_value, device)
-                        param_counter += 1
+                        succ_sent_cnt = self.read_and_publish_user_info(param_value, device)
+                        if succ_sent_cnt != -1:
+                            items_sent_count += succ_sent_cnt
+                            items_sending_failed += 2-succ_sent_cnt
 
                 param_info_table_extended = get_extended_param_info_table(device)
-                param_counter = 0
+
                 for param_value in param_info_table_extended.items():
                     param_number = param_value[1]['number']
                     if (urgent and param_number in self.config.urgent_list) or  (not urgent and param_number not in self.config.urgent_list):
-                        self.read_and_publish_param(param_value, device)
-                        param_counter += 1
+                        succ_sent_cnt = self.read_and_publish_param(param_value, device)
+                        if succ_sent_cnt != -1:
+                            items_sent_count += succ_sent_cnt
+                            items_sending_failed += 2-succ_sent_cnt
+
+                self.logger.info(f"Successfully sent {items_sent_count} items.")
+                if items_sending_failed > 0:
+                    self.logger.warning(f"Sending of {items_sending_failed} items failed.")
 
             if not urgent:
                 self.logger.debug(f"Waiting {self.config.loop_sleep}s")
@@ -127,7 +140,7 @@ class XtenderMqttSender:
                                                  control_interval_in_seconds=5.0)
         return device_manager
 
-    def read_and_publish_param(self, param_value, device, lock=True) -> None:
+    def read_and_publish_param(self, param_value, device, lock=True) -> int:
         """ Reads parameter value from xtender and sends them via mqtt.
 
         If the parameter is enabled in the configuration file the value is read from Xtender device and
@@ -142,7 +155,7 @@ class XtenderMqttSender:
         param_number = int(param_value[1]['number'])
         if not self.config.parameters_config[param_name]['enabled']:
             self.logger.debug(f"Parameter {param_number} {param_name} is disabled")
-            return
+            return -1
 
         with self.lock if lock else nullcontext():
             if format == 'signal':
@@ -160,26 +173,31 @@ class XtenderMqttSender:
             # sending value
             topic = f"{self.config.mqtt_root_prefix}/{device_address}/parameters/{param_name}"
             payload = value
-            self.send_and_check_mqqtt_delivery(topic, payload)
+            values_sent = self.send_and_check_mqtt_delivery(topic, payload)
 
             # sending value info
             value_info = json.dumps(param_value[1])
             payload = json.dumps(value_info)
-            self.send_and_check_mqqtt_delivery(topic, payload)
+            value_info_sent = self.send_and_check_mqtt_delivery(topic, payload)
+            return values_sent + value_info_sent
 
 
-    def send_and_check_mqqtt_delivery(self,topic,payload):
+    def send_and_check_mqtt_delivery(self, topic, payload) -> int:
         message_info = self.client.publish(topic,payload)
         if 0 < message_info.rc <= 5:
             self.logger.error(MQTT_ERROR_MSG[message_info.rc])
             if message_info.rc != 3:
                 sys.exit(1)
+            self.logger.warning(f"Error publishing topic {topic} with payload{payload}. {MQTT_ERROR_MSG[message_info.rc]}")
+            return 0
         elif message_info.rc > 5:
             self.logger.error(f"MQTT returned code {message_info.rc}. Check Documentation")
+            return 0
+        return 1
 
 
 
-    def read_and_publish_user_info(self, param_value, device, lock=True) -> None:
+    def read_and_publish_user_info(self, param_value, device, lock=True) ->int:
         """ Reads sensors value from xtender and sends them via mqtt.
 
         If the sensor is enabled in the configuration file a value is read from Xtender device and
@@ -195,8 +213,7 @@ class XtenderMqttSender:
         param_number = int(param_value[1]['number'])
         if not self.config.sensors_config[param_name]['enabled']:
             self.logger.debug(f"Parameter {param_number} {param_name} is disabled")
-            return
-
+            return -1
         property_format = param_value[1]['propertyFormat']
 
         with self.lock if lock else nullcontext():
@@ -224,12 +241,13 @@ class XtenderMqttSender:
             # sending value
             topic = f"{self.config.mqtt_root_prefix}/{device_address}/values/{param_name}"
             payload = value
-            self.send_and_check_mqqtt_delivery(topic, payload)
+            values_sent = self.send_and_check_mqtt_delivery(topic, payload)
 
             topic = f"{self.config.mqtt_root_prefix}/{device_address}/parameters/{param_name}/"
             value_info = json.dumps(param_value[1])
             payload = json.dumps(value_info)
-            self.send_and_check_mqqtt_delivery(topic,payload)
+            params_sent =  self.send_and_check_mqtt_delivery(topic, payload)
+            return values_sent+params_sent
 
     def subscribe_mqtt(self, topic) -> None:
         """ Subscribes to the mqtt message broker.
@@ -290,6 +308,26 @@ class XtenderMqttSender:
 
         self.client.on_message = on_message
 
+
+def send_mqtt_delivery_and_retry_on_failure(client: paho.mqtt.client.Client,logger: logging.Logger,topic: str,payload: str,retain: bool):
+    seconds_before_retry = 10
+    attempt_max = 5
+    for attempt in range(attempt_max):
+        message_info = client.publish(topic, payload, retain=retain)
+        if 0 < message_info.rc <= 5:
+            if attempt < attempt_max -1:
+                logger.error(f"{MQTT_ERROR_MSG[message_info.rc]}")
+                logger.error(f"Communication error during discovery. Retrying in {seconds_before_retry} seconds")
+                time.sleep(seconds_before_retry)
+            else:
+                logger.error(f"{MQTT_ERROR_MSG[message_info.rc]}")
+                logger.error(f"Could not connect with mqtt broker during discovery. Application will exit now.")
+                sys.exit(1)
+
+
+
+
+
 def send_device_discovery(client, device_manager, address, config, logger) -> None:
     """Home assistant mqtt discovery.
 
@@ -307,39 +345,33 @@ def send_device_discovery(client, device_manager, address, config, logger) -> No
 
     for param_key in config.mqtt_discovery_map:
         rule = config.mqtt_discovery_map[param_key]
-        deconfig = False
+        unique_id = f"{device_address}_{param_key}_{rule['number']}"
+        component = rule['component']
+        discovery_topic = f"{config.discovery_base_topic}/{component}/{unique_id}/config"
         if rule['param']:
             if not config.parameters_config[param_key]['enabled']:
-                logger.debug(f"Discovery rule for {param_key} is disabled")
-                # continue
-                deconfig = True
+                logger.debug(f"Discovery rule for {param_key} is disabled, unregistering {unique_id}")
+                send_mqtt_delivery_and_retry_on_failure(client,logger,discovery_topic,payload="",retain=True)
+                continue
         else:
             if not config.sensors_config[param_key]['enabled']:
-                logger.debug(f"Discovery rule for {param_key} is disabled")
+                logger.debug(f"Discovery rule for {param_key} is disabled, unregistering {unique_id}")
+                send_mqtt_delivery_and_retry_on_failure(client,logger,discovery_topic,payload="",retain=True)
                 # continue
-                deconfig = True
 
-        component = rule['component']
+
         icon = rule.get('icon', None)
         unit_of_measurement = rule.get('unit_of_measurement', None)
 
         if rule['param']:
-            payload_topic = f"{config.discovery_base_topic}/{device_address}/parameters/{param_key}"
+            payload_topic = f"{config.mqtt_root_prefix}/{device_address}/parameters/{param_key}"
             # name = device.paramInfoTable[param_key]['studerName']
             name = get_extended_param_info_table(device)[param_key]['studerName']
         else:
-            payload_topic = f"{config.discovery_base_topic}/{device_address}/values/{param_key}"
+            payload_topic = f"{config.mqtt_root_prefix}/{device_address}/values/{param_key}"
             # name = device.userInfoTable[param_key]['studerName']
             name = get_extended_user_info_table(device)[param_key]['studerName']
-
-        device_type_str = [k for k, v in device.device_categories.items() if v == device.device_type]
-
-        unique_id = f"{rule['number']}_{device_address}_{param_key}"
-
-        discovery_topic = f"{config.discovery_base_topic}/{component}/{unique_id}/{param_key}/config"
-
         logger.debug("Discovery topic=" + discovery_topic)
-
         discovery_json = {
             "unique_id": unique_id,
             "object_id": unique_id,
@@ -390,13 +422,10 @@ def send_device_discovery(client, device_manager, address, config, logger) -> No
                 "mode": 'box'
             })
 
-        if deconfig:
-            discovery_payload = ""
-            logger.info(f"Unregistering {unique_id} / {param_key}")
-        else:
-            discovery_payload = json.dumps(discovery_json)
+        discovery_payload = json.dumps(discovery_json)
+        send_mqtt_delivery_and_retry_on_failure(client,logger,discovery_topic,discovery_payload,retain=True)
 
-        client.publish(discovery_topic, discovery_payload, retain=True)
+
 
 def get_extended_param_info_table(device):
     return device.paramInfoTable
