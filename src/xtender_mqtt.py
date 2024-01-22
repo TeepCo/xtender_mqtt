@@ -176,6 +176,7 @@ class XtenderMqttSender:
             values_sent = self.send_and_check_mqtt_delivery(topic, payload)
 
             # sending value info
+            topic = f"{self.config.mqtt_root_prefix}/{device_address}/parameters/{param_name}/"
             value_info = json.dumps(param_value[1])
             payload = json.dumps(value_info)
             value_info_sent = self.send_and_check_mqtt_delivery(topic, payload)
@@ -193,6 +194,7 @@ class XtenderMqttSender:
         elif message_info.rc > 5:
             self.logger.error(f"MQTT returned code {message_info.rc}. Check Documentation")
             return 0
+        self.logger.debug(f"topic: {topic}, payload: {payload}")
         return 1
 
 
