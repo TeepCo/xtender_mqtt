@@ -7,6 +7,7 @@ from enum import Enum
 DEBUG = False
 if DEBUG:
     import pydevd_pycharm
+
     pydevd_pycharm.settrace('localhost', port=10000, stdoutToServer=True, stderrToServer=True)
 
 import paho.mqtt.client
@@ -24,13 +25,14 @@ from sino import scom
 from xtender_cfg import XtenderConfig
 
 MQTT_ERROR_MSG = {
-    0 :" Connection Accepted.",
-    1 :" Connection Refused. Protocol level not supported.",
-    2 :" Connection Refused. The client-identifier is not allowed by the server.",
-    3 :" Connection Refused. The MQTT service is not available.",
-    4 :" Connection Refused. The data in the username or password is malformed. Also check if you connecting to the right port.",
-    5 :" Connection Refused. The client is not authorized to connect."
+    0: " Connection Accepted.",
+    1: " Connection Refused. Protocol level not supported.",
+    2: " Connection Refused. The client-identifier is not allowed by the server.",
+    3: " Connection Refused. The MQTT service is not available.",
+    4: " Connection Refused. The data in the username or password is malformed. Also check if you connecting to the right port.",
+    5: " Connection Refused. The client is not authorized to connect."
 }
+
 
 class XtenderMqttSender:
     """ Class for reading values from xtender devices and sending them to mqtt.
@@ -101,21 +103,23 @@ class XtenderMqttSender:
 
                 for param_value in user_info_table_extended.items():
                     param_number = param_value[1]['number']
-                    if (urgent and param_number in self.config.urgent_list) or (not urgent and param_number not in self.config.urgent_list):
+                    if (urgent and param_number in self.config.urgent_list) or (
+                            not urgent and param_number not in self.config.urgent_list):
                         succ_sent_cnt = self.read_and_publish_user_info(param_value, device)
                         if succ_sent_cnt != -1:
                             items_sent_count += succ_sent_cnt
-                            items_sending_failed += 2-succ_sent_cnt
+                            items_sending_failed += 2 - succ_sent_cnt
 
                 param_info_table_extended = get_extended_param_info_table(device)
 
                 for param_value in param_info_table_extended.items():
                     param_number = param_value[1]['number']
-                    if (urgent and param_number in self.config.urgent_list) or  (not urgent and param_number not in self.config.urgent_list):
+                    if (urgent and param_number in self.config.urgent_list) or (
+                            not urgent and param_number not in self.config.urgent_list):
                         succ_sent_cnt = self.read_and_publish_param(param_value, device)
                         if succ_sent_cnt != -1:
                             items_sent_count += succ_sent_cnt
-                            items_sending_failed += 2-succ_sent_cnt
+                            items_sending_failed += 2 - succ_sent_cnt
 
                 self.logger.info(f"Successfully sent {items_sent_count} items.")
                 if items_sending_failed > 0:
@@ -126,7 +130,6 @@ class XtenderMqttSender:
                 time.sleep(self.config.loop_sleep)
             else:
                 self.logger.debug("Not waiting due to urgent ")
-
 
     def configure_and_connect_device_manager(self) -> scom.dman.DeviceManager:
         """Configures and connects to the scom device manager based on values provided in the configuration files.
@@ -182,14 +185,14 @@ class XtenderMqttSender:
             value_info_sent = self.send_and_check_mqtt_delivery(topic, payload)
             return values_sent + value_info_sent
 
-
     def send_and_check_mqtt_delivery(self, topic, payload) -> int:
-        message_info = self.client.publish(topic,payload)
+        message_info = self.client.publish(topic, payload)
         if 0 < message_info.rc <= 5:
             self.logger.error(MQTT_ERROR_MSG[message_info.rc])
             if message_info.rc != 3:
                 sys.exit(1)
-            self.logger.warning(f"Error publishing topic {topic} with payload{payload}. {MQTT_ERROR_MSG[message_info.rc]}")
+            self.logger.warning(
+                f"Error publishing topic {topic} with payload{payload}. {MQTT_ERROR_MSG[message_info.rc]}")
             return 0
         elif message_info.rc > 5:
             self.logger.error(f"MQTT returned code {message_info.rc}. Check Documentation")
@@ -197,9 +200,7 @@ class XtenderMqttSender:
         self.logger.debug(f"topic: {topic}, payload: {payload}")
         return 1
 
-
-
-    def read_and_publish_user_info(self, param_value, device, lock=True) ->int:
+    def read_and_publish_user_info(self, param_value, device, lock=True) -> int:
         """ Reads sensors value from xtender and sends them via mqtt.
 
         If the sensor is enabled in the configuration file a value is read from Xtender device and
@@ -248,8 +249,8 @@ class XtenderMqttSender:
             topic = f"{self.config.mqtt_root_prefix}/{device_address}/parameters/{param_name}/"
             value_info = json.dumps(param_value[1])
             payload = json.dumps(value_info)
-            params_sent =  self.send_and_check_mqtt_delivery(topic, payload)
-            return values_sent+params_sent
+            params_sent = self.send_and_check_mqtt_delivery(topic, payload)
+            return values_sent + params_sent
 
     def subscribe_mqtt(self, topic) -> None:
         """ Subscribes to the mqtt message broker.
@@ -257,6 +258,7 @@ class XtenderMqttSender:
         Args:
             topic (str): Mqtt topic
         """
+
         def on_message(client, userdata, msg):
             self.logger.info(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
             # xtender/101/parameters/allowInverter/set'
@@ -306,18 +308,20 @@ class XtenderMqttSender:
         if result == paho.mqtt.client.MQTT_ERR_SUCCESS:
             self.logger.info(f"Successfully subscribed to MQTT topic {topic}")
         elif paho.mqtt.client.MQTT_ERR_NO_CONN:
-            self.logger.error(f"Client is not connected to MQTT, errror subscribing to topic {topic}. Check your mqtt settings.")
+            self.logger.error(
+                f"Client is not connected to MQTT, errror subscribing to topic {topic}. Check your mqtt settings.")
 
         self.client.on_message = on_message
 
 
-def send_mqtt_delivery_and_retry_on_failure(client: paho.mqtt.client.Client,logger: logging.Logger,topic: str,payload: str,retain: bool):
+def send_mqtt_delivery_and_retry_on_failure(client: paho.mqtt.client.Client, logger: logging.Logger, topic: str,
+                                            payload: str, retain: bool):
     seconds_before_retry = 10
     attempt_max = 5
     for attempt in range(attempt_max):
         message_info = client.publish(topic, payload, retain=retain)
         if 0 < message_info.rc <= 5:
-            if attempt < attempt_max -1:
+            if attempt < attempt_max - 1:
                 logger.error(f"{MQTT_ERROR_MSG[message_info.rc]}")
                 logger.error(f"Communication error during discovery. Retrying in {seconds_before_retry} seconds")
                 time.sleep(seconds_before_retry)
@@ -325,9 +329,6 @@ def send_mqtt_delivery_and_retry_on_failure(client: paho.mqtt.client.Client,logg
                 logger.error(f"{MQTT_ERROR_MSG[message_info.rc]}")
                 logger.error(f"Could not connect with mqtt broker during discovery. Application will exit now.")
                 sys.exit(1)
-
-
-
 
 
 def send_device_discovery(client, device_manager, address, config, logger) -> None:
@@ -344,7 +345,6 @@ def send_device_discovery(client, device_manager, address, config, logger) -> No
     device = device_manager._device[address]
     device_address = device.device_address
 
-
     for param_key in config.mqtt_discovery_map:
         rule = config.mqtt_discovery_map[param_key]
         unique_id = f"{device_address}_{param_key}_{rule['number']}"
@@ -353,14 +353,13 @@ def send_device_discovery(client, device_manager, address, config, logger) -> No
         if rule['param']:
             if not config.parameters_config[param_key]['enabled']:
                 logger.debug(f"Discovery rule for {param_key} is disabled, unregistering {unique_id}")
-                send_mqtt_delivery_and_retry_on_failure(client,logger,discovery_topic,payload="",retain=True)
+                send_mqtt_delivery_and_retry_on_failure(client, logger, discovery_topic, payload="", retain=True)
                 continue
         else:
             if not config.sensors_config[param_key]['enabled']:
                 logger.debug(f"Discovery rule for {param_key} is disabled, unregistering {unique_id}")
-                send_mqtt_delivery_and_retry_on_failure(client,logger,discovery_topic,payload="",retain=True)
+                send_mqtt_delivery_and_retry_on_failure(client, logger, discovery_topic, payload="", retain=True)
                 # continue
-
 
         icon = rule.get('icon', None)
         unit_of_measurement = rule.get('unit_of_measurement', None)
@@ -425,8 +424,7 @@ def send_device_discovery(client, device_manager, address, config, logger) -> No
             })
 
         discovery_payload = json.dumps(discovery_json)
-        send_mqtt_delivery_and_retry_on_failure(client,logger,discovery_topic,discovery_payload,retain=True)
-
+        send_mqtt_delivery_and_retry_on_failure(client, logger, discovery_topic, discovery_payload, retain=True)
 
 
 def get_extended_param_info_table(device):
@@ -450,7 +448,8 @@ class ScomDevicesObserver(scom.dman.DeviceSubscriber):
 
         if device.device_type == scom.Device.SD_XTENDER:
             print('Xtender found!')
-            send_device_discovery(self.xtender.client, self.xtender.device_manager, device.device_address, self.xtender.config, self.xtender.logger)
+            send_device_discovery(self.xtender.client, self.xtender.device_manager, device.device_address,
+                                  self.xtender.config, self.xtender.logger)
         else:
             print('Other device type detected')
 
@@ -461,9 +460,7 @@ class ScomDevicesObserver(scom.dman.DeviceSubscriber):
         # print(f"!!!!{device} disconnected")
 
 
-
-
-def connect_mqtt(xtender_config : XtenderConfig,logger) -> mqtt.Client:
+def connect_mqtt(xtender_config: XtenderConfig, logger) -> mqtt.Client:
     """ Sets up mqtt client and attempts to connect to the message broker.
 
     Args:
@@ -472,6 +469,7 @@ def connect_mqtt(xtender_config : XtenderConfig,logger) -> mqtt.Client:
     Returns:
         Mqtt client
     """
+
     def on_connect(client, userdata, flags, rc):
         if rc == 0:
             # print("Connected to MQTT MQTT_BROKER!")
@@ -489,12 +487,11 @@ def connect_mqtt(xtender_config : XtenderConfig,logger) -> mqtt.Client:
     try:
         client.connect(xtender_config.mqtt_broker, xtender_config.mqtt_port)
 
-    except OSError as e:
-        if e.errno == 113:
-            logger.error(f"Could not connect to {xtender_config.mqtt_broker}: No route to host")
-            sys.exit(1)
+    except Error as e:
+        logger.error(f"Could not connect to {xtender_config.mqtt_broker}: {e}. Restarting service in 5 seconds.")
+        time.sleep(5)
+        sys.exit(1)
     return client
-
 
 
 def main():
@@ -520,8 +517,9 @@ def main():
         xtender.logger.error("Threads were not started!")
 
     # send_to_mqtt.start()
-    #while xtender.all_ok:
+    # while xtender.all_ok:
     #    pass
+
 
 if __name__ == '__main__':
     # logger.info("Starting..")
