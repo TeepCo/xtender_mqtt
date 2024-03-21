@@ -4,7 +4,7 @@ import subprocess
 import os
 args = sys.argv
 SCRIPT_NAME = "xtmq"
-VERSION = "0.9.1"
+VERSION = "0.9.2"
 
 COMMANDS_HELP = ["-h","help","--help"]
 COMMANDS_VERSION = ["--version","-v","version"]
