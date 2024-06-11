@@ -61,14 +61,6 @@ class DefaultValues:
             "studerName": "Battery cycle phase",
             "enabled": False
         },
-        "pvVoltage": {
-            "name": "pvVoltage",
-            "number": 3011,
-            "propertyFormat": "float",
-            "default": 0.0,
-            "studerName": "Input voltage",
-            "enabled": False
-        },
         "inputVoltage": {
             "name": "inputVoltage",
             "number": 3011,
@@ -556,14 +548,6 @@ class DefaultValues:
                 7: 'Mixing',
                 8: 'Forming'
             }
-        },
-        'pvVoltage': {
-            'number': 3011,
-            'param': False,
-            'component': 'sensor',
-            'device_class': 'voltage',
-            'icon': None,
-            'unit_of_measurement': 'V',
         },
         'inputVoltage': {
             'number': 3011,

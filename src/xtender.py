@@ -123,8 +123,6 @@ class Xtender(ScomDevice):
                 'studerName': 'State of charge'},
         'batteryCyclePhase': {'name': 'batteryCyclePhase', 'number': 3010, 'propertyFormat': 'enum',
                               'default': 0, 'studerName': 'Battery cycle phase'},
-        'pvVoltage': {'name': 'pvVoltage', 'number': 3011, 'propertyFormat': 'float', 'default': 0.0,
-                      'studerName': 'Input voltage'},
         'inputVoltage': {'name': 'inputVoltage', 'number': 3011, 'propertyFormat': 'float', 'default': 0.0,
                          'studerName': 'Input voltage'},
         'inputCurrent': {'name': 'inputCurrent', 'number': 3012, 'propertyFormat': 'float', 'default': 0.0,
